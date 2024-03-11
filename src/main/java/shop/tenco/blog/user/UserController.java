@@ -63,9 +63,12 @@ public class UserController {
     public String updateForm() {
         return "user/updateForm";
     }
-
+    
+    // 코드 수정 
     @GetMapping("/logout")
     public String logout() {
+    	// 세션 메모리 영역에서 해제 
+    	session.invalidate();
         return "redirect:/";
     }
 }
