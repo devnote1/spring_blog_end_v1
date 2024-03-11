@@ -1,4 +1,4 @@
-package shop.tenco.blog.controller;
+package shop.tenco.blog.board;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

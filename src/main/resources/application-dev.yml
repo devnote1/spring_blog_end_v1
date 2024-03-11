@@ -1,6 +1,31 @@
 server:
   servlet:
     encoding:
-      charset: utf-8
-      force: true
-  port: 8080
+      charset: utf-8 # 서블릿 응답 및 요청에 사용될 문자 인코딩을 UTF-8로 설정합니다.
+      force: true # 요청과 응답 모두에 강제적으로 해당 인코딩(charset)을 사용하도록 합니다.
+    session:
+      timeout: 30m # 세션 타임아웃을 30분으로 설정합니다. 사용자가 30분 동안 활동이 없으면 세션이 만료됩니다.
+  port: 8080 # 애플리케이션이 사용할 서버 포트를 8080으로 설정합니다.
+
+spring:
+  mustache:
+    servlet:
+      expose-session-attributes: true # Mustache 템플릿 엔진에 세션 속성을 노출시킵니다.
+      expose-request-attributes: true # Mustache 템플릿 엔진에 요청 속성을 노출시킵니다.
+  datasource:
+    driver-class-name: org.h2.Driver # 데이터베이스 연결을 위한 JDBC 드라이버 클래스를 H2 데이터베이스 드라이버로 설정합니다.
+    url: jdbc:h2:mem:test;MODE=MySQL # H2 인메모리 데이터베이스의 URL을 설정합니다. MySQL 모드를 사용하여 호환성을 높입니다.
+    username: sa # 데이터베이스 접속을 위한 사용자 이름을 설정합니다.
+    password: # 데이터베이스 접속을 위한 비밀번호를 설정합니다. (여기서는 비워져 있음)
+  h2:
+    console:
+      enabled: true # H2 데이터베이스 콘솔을 활성화합니다. 개발 중 데이터베이스 상태를 쉽게 확인할 수 있게 해줍니다.
+  jpa:
+    hibernate:
+      ddl-auto: update # Hibernate가 시작될 때 데이터베이스 스키마를 자동으로 생성하도록 설정합니다.
+    show-sql: true # JPA를 통해 실행되는 SQL 쿼리를 콘솔에 출력하도록 합니다.
+    properties:
+      hibernate:
+        format_sql: true # SQL 쿼리 출력 시 가독성을 높이기 위해 포맷팅합니다.
+        
+        
