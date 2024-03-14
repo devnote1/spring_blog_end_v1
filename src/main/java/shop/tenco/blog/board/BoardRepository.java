@@ -47,7 +47,6 @@ public class BoardRepository {
 	        System.out.println("userId : "+userId);
 	        System.out.println("username : "+username);
 	        
-	        
 	        responseDTO.setId(id);
 	        responseDTO.setTitle(title);
 	        responseDTO.setContent(content);
@@ -68,6 +67,20 @@ public class BoardRepository {
 	    query.setParameter(2, requestDTO.getContent());
 	    query.setParameter(3, userId);
 	    
-	    query.executeUpdate();
+	    query.executeUpdate();  // insert, update, delete 
+	}
+
+	public Board findByBoardId(int id) {
+		Query query = em.createNativeQuery("select * from board_tb where id = ?", Board.class);
+		query.setParameter(1, id);
+		Board board = (Board) query.getSingleResult();
+		return board;
+	}
+	
+	@Transactional
+	public void deleteById(int id) {
+	    Query query = em.createNativeQuery("delete from board_tb where id = ?");
+	    query.setParameter(1, id);
+	    query.executeUpdate(); // insert, update, delete 
 	}
 }
