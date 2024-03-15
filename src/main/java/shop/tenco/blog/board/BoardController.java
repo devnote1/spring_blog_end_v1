@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import shop.tenco.blog.user.User;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @RequiredArgsConstructor
 @Controller
@@ -20,13 +21,20 @@ public class BoardController {
 	private final BoardRepository boardRepository;
 	private final HttpSession session;
 
+//	@GetMapping({ "/", "/board" })
+//	public String index(HttpServletRequest request) {
+//
+//		List<Board> boardList = boardRepository.findAll();
+//		request.setAttribute("boardList", boardList);
+//
+//		return "index";
+//	}
+	
 	@GetMapping({ "/", "/board" })
-	public String index(HttpServletRequest request) {
-
-		List<Board> boardList = boardRepository.findAll();
-		request.setAttribute("boardList", boardList);
-
-		return "index";
+	@ResponseBody
+	public List<BoardResponse.BoardDTO> index(HttpServletRequest request) {
+		List<BoardResponse.BoardDTO> boardList = boardRepository.findAllV2();
+		return boardList;
 	}
 
 	// /board/saveForm 요청(Get)이 온다
