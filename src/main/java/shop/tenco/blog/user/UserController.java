@@ -2,6 +2,7 @@ package shop.tenco.blog.user;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -60,9 +61,36 @@ public class UserController {
     }
 
     @GetMapping("/user/updateForm")
-    public String updateForm() {
+    public String updateForm(HttpServletRequest request ) {
+    	// 1. 인증 체크
+	    User sessionUser = (User) session.getAttribute("sessionUser");
+	    if(sessionUser == null){
+	        return "redirect:/loginForm";
+	    }
+	    
+	    request.setAttribute("user", sessionUser);	    
         return "user/updateForm";
     }
+    
+    @PostMapping("/user/update")
+    public String update(HttpServletRequest request) {
+        // 30분이 지나면 세션 만료 
+    	User sessionUser = (User) session.getAttribute("sessionUser");
+	    if(sessionUser == null){
+	        return "redirect:/loginForm";
+	    }
+	    
+	    String password = request.getParameter("password");
+	    System.out.println("password : " + password);
+	    userRepository.update(password, sessionUser.getId());
+	    // 객체 상태 변경 
+	    sessionUser.setPassword(password);
+	    // 세션 정보 수정 
+	    session.setAttribute("sessionUser", sessionUser);
+        
+        return "redirect:/";
+    }
+    
     
     // 코드 수정 
     @GetMapping("/logout")

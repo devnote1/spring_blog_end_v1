@@ -45,4 +45,13 @@ public class UserRepository {
 		}
         return user;
     }
+    
+    
+    @Transactional 
+    public void update(String password, Long userId){
+        Query query = em.createNativeQuery("update user_tb set password = ? where id = ? ");
+        query.setParameter(1, password);
+        query.setParameter(2, userId);
+        query.executeUpdate();
+    }
 }
