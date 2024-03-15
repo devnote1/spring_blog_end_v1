@@ -24,112 +24,60 @@ public class BoardRepository {
         return query.getResultList();
     }
 	
-	// 필요하다면 게시글 출력 시 댓글 정보도 함께 들고 와야 한다. 
-	public List<BoardResponse.BoardDTO> findAllV2(){
-		String queryStr = " select bt.id, bt.title, bt.content, bt.user_id, "
-				+ "			 bt.created_at, ifnull(rt.id, 0) rid, ifnull(rt.board_id, 0), "
-				+ "			 ifnull(rt.comment,'') comment  "
-				+ " from board_tb bt left outer join reply_tb rt on bt.id = rt.board_id";
-		
-        Query query = em.createNativeQuery(queryStr);
-        // 6개의 ROW 가 발생 
-        List<Object[]> rows = (List<Object[]>) query.getResultList();
-        List<BoardResponse.BoardDTO> boardList = new ArrayList<>();
-        List<BoardResponse.ReplyDTO> replyList = new ArrayList<>();
-        
-        // 데이터 가공 4개로 줄이가 
-        for (Object[] row : rows) {
-        	
-        	// BoardDTO
-            Integer id = (Integer) row[0];
-            String title = (String) row[1];
-            String content = (String) row[2];
-            Integer userId = (Integer) row[3];
-            Timestamp createdAt = (Timestamp) row[4];
-            BoardResponse.BoardDTO board = 
-            		new BoardResponse.BoardDTO(id, title, content, userId, createdAt);
-            // List Board 자료구조 
-            boardList.add(board);
-          
-            
-            // ReplyDTO
-            Integer rid = (Integer) row[5];
-            Integer boardId = (Integer) row[6];
-            String comment = (String) row[7];
-            
-            BoardResponse.ReplyDTO reply = 
-            		new BoardResponse.ReplyDTO(rid, boardId, comment);
-            // List replyList 자료구조 
-            replyList.add(reply);
-        }
-        
-        
-        // distinct() 메서드는 자바 스트림(java.util.stream.Stream) API의 중간 연산으로, 
-        // 스트림의 요소 중 중복된 값을 제거하고 유일한 요소만을 남기는 데 사용됩니다.
-        // 단, 자바 16 이상 부터 사용가능
-
-        // 6개의 크기를 4개로 줄임 
-        boardList = boardList.stream().distinct().toList();
-        // 크기 확인  
-        System.out.println("Board Size - " + boardList.size());
-        
-        // boardList의 각각의 요소(BoardDTO 안에 <- ReplyDTO 을 넣어 주자) 
-        for (BoardResponse.BoardDTO b : boardList){
-            // 6 바퀴
-            for (BoardResponse.ReplyDTO r : replyList){
-                if(b.getId() == r.getBoardId()){
-                	// BoardDTO 에 ReplyList 추가  
-                    b.getReplyDTOList().add(r);
-                }
-            }
-        }
-        
-       System.out.println("최종 : " + boardList.toString());
-        
-       return boardList;
-    }
+	// 코드 삭제 처리 
 	
-	public BoardResponse.DetailDTO findById(int idx) {
-		// getSingleResult() 결과가 없으면 예외 클래스를 반환 합니다.  
-		BoardResponse.DetailDTO responseDTO = new BoardResponse.DetailDTO();
-		
-		try {
-			// 메서드명 확인 (createNativeQuery)
-			Query query = em.createNativeQuery("select b.id, b.title, b.content, b.user_id, u.username "
-					+ "from board_tb b "
-					+ "inner join user_tb u on b.user_id = u.id "
-					+ "where b.id = ?1 ");
-			query.setParameter(1, idx);
-			
-			// 컬럼이 여러개 -> Object[] 배열로 넘어 온다. 
-			Object[] row = (Object[]) query.getSingleResult();
-			Integer id = (Integer) row[0];
-	        String title = (String) row[1];
-	        String content = (String) row[2];
-	        int userId = (Integer) row[3];
-	        String username = (String) row[4];
+	public BoardResponse.DetailDTO findByIdWithUserAndWithReply(int idx) {
+		// 텍스트 블록(Text Blocks) 
+		// Java 15부터 정식 확정 
+	    String q = """
+	            select bt.id, bt.title, bt.content, bt.user_id, but.username, bt.created_at, 
+	            rt.id r_id, rt.user_id r_user_id, rut.username, rt.comment from board_tb bt
+	            left outer join reply_tb rt on bt.id = rt.board_id 
+	            inner join user_tb but on bt.user_id = but.id 
+	            left outer join user_tb rut on rt.user_id = rut.id 
+	            where bt.id = ?
+	            """;
 
-	        System.out.println("id : "+id);
-	        System.out.println("title : "+title);
-	        System.out.println("content : "+content);
-	        System.out.println("userId : "+userId);
-	        System.out.println("username : "+username);
-	        
-	        responseDTO.setId(id);
-	        responseDTO.setTitle(title);
-	        responseDTO.setContent(content);
-	        responseDTO.setUserId(userId);
-	        responseDTO.setUsername(username);
-	        
-		} catch (Exception e) {
-			System.err.println("findById 예외 발생 : " + e.getClass());
-			System.err.println("msg: " + e.getMessage());
-		}
-		return responseDTO; 
+
+	    Query query = em.createNativeQuery(q);
+	    query.setParameter(1, idx);
+
+	    // 1. 전체 결과 받기
+	    List<Object[]> rows = (List<Object[]>) query.getResultList();
+
+	    // 2. Board 결과가 3개가 중복되기 때문에, 0번지의 값만 가져오기
+	    Integer id = (Integer) rows.get(0)[0];
+	    String title = (String) rows.get(0)[1];
+	    String content = (String) rows.get(0)[2];
+	    int userId = (Integer) rows.get(0)[3];
+	    String username = (String) rows.get(0)[4];
+	    Timestamp createdAt = (Timestamp) rows.get(0)[5];
+
+	    BoardResponse.DetailDTO detailDTO = new BoardResponse.DetailDTO(
+	            id, title, content, userId, username, createdAt
+	    );
+
+	    // 3 바퀴 돌면서 댓글 추가하기
+	    for (Object[] row : rows) {
+	        Integer rId = (Integer) row[6];
+	        Integer rUserId = (Integer) row[7];
+	        String rUsername = (String) row[8];
+	        String rComment = (String) row[9];
+
+	        BoardResponse.ReplyDTO replyDTO = new BoardResponse.ReplyDTO(
+	                rId, rUserId, rUsername, rComment, false
+	        );
+
+	        // 댓글이 없으면 add 안하기 (중괄호 제거 권장 안함)
+	        if (rId != null) detailDTO.addReply(replyDTO);
+	    }
+
+	    return detailDTO;
 	}
+	
 
 	@Transactional
-	public void save(BoardRequest.SaveDTO requestDTO, Long userId) {
+	public void save(BoardRequest.SaveDTO requestDTO, int userId) {
 	    Query query = em.createNativeQuery("insert into board_tb(title, content, user_id, created_at) values(?,?,?, now())");
 	    query.setParameter(1, requestDTO.getTitle());
 	    query.setParameter(2, requestDTO.getContent());

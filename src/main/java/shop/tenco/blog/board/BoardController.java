@@ -21,21 +21,15 @@ public class BoardController {
 	private final BoardRepository boardRepository;
 	private final HttpSession session;
 
-//	@GetMapping({ "/", "/board" })
-//	public String index(HttpServletRequest request) {
-//
-//		List<Board> boardList = boardRepository.findAll();
-//		request.setAttribute("boardList", boardList);
-//
-//		return "index";
-//	}
-	
 	@GetMapping({ "/", "/board" })
-	@ResponseBody
-	public List<BoardResponse.BoardDTO> index(HttpServletRequest request) {
-		List<BoardResponse.BoardDTO> boardList = boardRepository.findAllV2();
-		return boardList;
+	public String index(HttpServletRequest request) {
+
+		List<Board> boardList = boardRepository.findAll();
+		request.setAttribute("boardList", boardList);
+
+		return "index";
 	}
+	
 
 	// /board/saveForm 요청(Get)이 온다
 	@GetMapping("/board/saveForm")
@@ -74,16 +68,39 @@ public class BoardController {
 		return "redirect:/";
 	}
 
-	// Spring MVC에서 URI의 경로 변수를 메소드의
-	// 매개변수로 바인딩하려면 @PathVariable 어노테이션을 사용해야 합니다.
 	@GetMapping("/board/{id}")
-	public String detail(@PathVariable("id") int id, HttpServletRequest request) {
-		System.out.println("id : " + id);
+	public String detail(@PathVariable(value = "id") int id, HttpServletRequest request) {
+	    
+		// 1. 모델 진입 - 상세보기 데이터 가져오기
+	    BoardResponse.DetailDTO responseDTO = boardRepository.findByIdWithUserAndWithReply(id);
 
-		BoardResponse.DetailDTO responseDTO = boardRepository.findById(id);
-		request.setAttribute("board", responseDTO);
+	    // 2. 페이지 주인 여부 체크 (board의 userId와 sessionUser의 id를 비교)
+	    User sessionUser = (User) session.getAttribute("sessionUser");
 
-		return "board/detail";
+	    boolean pageOwner;
+	    if (sessionUser == null) {
+	        pageOwner = false;
+	    } else {
+	        int authorId = responseDTO.getUserId();
+	        int loggedInUserId = sessionUser.getId();
+	        pageOwner = authorId == loggedInUserId;
+	    }
+
+	    // 페이지 주인 여부
+	    responseDTO.setPageOwner(pageOwner);
+
+	    // 댓글 주인 여부
+	    if (sessionUser != null) {
+	        for (BoardResponse.ReplyDTO reply : responseDTO.getReplies()){
+	            if(reply.getRUserId() == sessionUser.getId()){
+	                reply.setROwner(true);
+	            }
+	        }
+	    }
+
+	    request.setAttribute("board", responseDTO);
+
+	    return "board/detail";
 	}
 	
 	@PostMapping("/board/{id}/delete")
