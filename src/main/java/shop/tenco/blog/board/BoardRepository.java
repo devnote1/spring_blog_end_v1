@@ -16,15 +16,29 @@ import lombok.RequiredArgsConstructor;
 @Repository
 public class BoardRepository {
 	private final EntityManager em;
-
-	public List<Board> findAll(){
-        Query query = em.createNativeQuery("select * from board_tb order by id desc", Board.class);
-        // 조회된 데이터가 없을 경우 null을 반환하지 않고, 비어 있는 리스트(empty list)를 반환합니다.
-        // List<Board> boardListEntity = query.getResultList();  
+	
+	// 한 페이지당 갯수는 3로 고정 함(limit)  
+	// 시작할 인덱스 번호, ROW 갯수    
+	public List<Board> findAll(Integer page){ 
+        Query query = em.createNativeQuery("select * from board_tb order by id desc limit ?, 3 ", Board.class);
+        query.setParameter(1, (page * 3));
         return query.getResultList();
     }
+	// 오버로딩 활용 
+	public List<Board> findAll(Integer page, String keyword) {
+	    Query query = em.createNativeQuery("select * from board_tb where title like ? order by id desc limit ?, 3", Board.class);
+	    query.setParameter(1, "%"+keyword+"%");
+	    query.setParameter(2, page * 3);
+	    return query.getResultList();
+	}
 	
-	// 코드 삭제 처리 
+	// 3개씩 끊어서 총 몇 페이지 될지 계산해주어야 한다.  
+	public Long count(String keyword) {
+	    Query query = em.createNativeQuery("select count(*) from board_tb where title like ?");
+	    query.setParameter(1, "%"+keyword+"%");
+	    return (Long) query.getSingleResult();
+	}
+
 	
 	public BoardResponse.DetailDTO findByIdWithUserAndWithReply(int idx) {
 		// 텍스트 블록(Text Blocks) 

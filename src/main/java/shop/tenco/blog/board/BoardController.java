@@ -5,14 +5,15 @@ import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import shop.tenco.blog.user.User;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
+
+
 
 @RequiredArgsConstructor
 @Controller
@@ -20,13 +21,46 @@ public class BoardController {
 
 	private final BoardRepository boardRepository;
 	private final HttpSession session;
-
-	@GetMapping({ "/", "/board" })
-	public String index(HttpServletRequest request) {
-
-		List<Board> boardList = boardRepository.findAll();
+	
+	// 주소 설계 
+	// localhost:8080?page=1 -> page 값이 1
+	// localhost:8080  -> page 값이 0
+	@GetMapping("/")
+	public String index(HttpServletRequest request,
+			@RequestParam(value = "page", defaultValue = "0") Integer page,
+			@RequestParam(value = "keyword", defaultValue = "") String keyword) {
+		List<Board> boardList = null;
+		
+		 if (keyword.isBlank()) {
+			 // 공백 처리 주의 
+			 request.setAttribute("keyword", "");
+			 boardList = boardRepository.findAll(page);
+		 } else {
+			 request.setAttribute("keyword", keyword);
+			 boardList = boardRepository.findAll(page, keyword);
+		 }
+		 
+		
+		// 전체 페이지 계산하기 
+		int count = boardRepository.count(keyword).intValue();
+		System.out.println("count : "+ count);
+		// 하나의 페이지에 보여줄 게시물 수는 3개로 고정해보자. 
+		// 총 갯수가 2개 --> 1 page 
+		// 3 --> 1page, 4 --> 2page
+		// 5 --> 2page, 6 --> 2page  
+		// 7 --> 3page, 8 --> 3page 
+		// 9 --> 3page, 10 --> 4page 
+		// 위 내용을 확인해 보면 총 갯수 / 3 일때 나머지가 있다면 + 1을 해주어 한다. 
+		int namerge = count % 3 == 0 ? 0 : 1; 
+		int allPageCount = (count / 3) + namerge;
+		
+		
 		request.setAttribute("boardList", boardList);
-
+		request.setAttribute("first", page == 0); // 비교 연산자 
+		request.setAttribute("last", allPageCount == (page + 1)); // 비교 연산자 
+		request.setAttribute("prev", page - 1);
+		request.setAttribute("next", page + 1);
+		
 		return "index";
 	}
 	
